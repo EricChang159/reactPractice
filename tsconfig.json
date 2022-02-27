@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+      "types": [
+        "node",
+        "webpack-env"
+      ],
+      "target": "es5",// 目標語言的版本
+      "lib": ["dom", "dom.iterable", "es2015.promise", "esnext"],
+      // 編譯時引入的 ES 功能庫，包括：es5 、es6、es7、dom 等。// 如果未設定，則預設為： target 為 es5 時: ["dom", "es5", "scripthost"] 
+      //target 為 es6 時: ["dom", "es6", "dom.iterable", "scripthost"]
+      "allowJs": true, // 允許編譯器編譯JS，JSX檔案
+      "checkJs": true, // 允許在JS檔案中報錯，通常與allowJS一起使用
+      "skipLibCheck": true,
+      "esModuleInterop": true,// 允許export=匯出，由import from 匯入
+      "allowSyntheticDefaultImports": true,
+      "strict": true,// 開啟所有嚴格的型別檢查
+      "forceConsistentCasingInFileNames": true,
+      "module": "esnext",// 生成程式碼的模板標準
+      "moduleResolution": "node",// 模組解析策略，ts預設用node的解析策略，即相對的方式匯入
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "noEmit": true,// 不輸出檔案,即編譯後不會生成任何js檔案
+      "jsx": "react",//在 .tsx 中支援 JSX ：React 或 Preserve
+      "strictFunctionTypes": false,// 不允許函式引數雙向協變
+      "downlevelIteration": true,// 降級遍歷器實現，如果目標源是es3/5，那麼遍歷器會有降級的實現
+      "noFallthroughCasesInSwitch": true,// 防止switch語句貫穿(即如果沒有break語句後面不會執行)
+      "baseUrl": "./src" // 解析非相對模組的基地址，預設是當前目錄
+    },
+    "include": ["src", "**/*.ts", "**/*.tsx"],
+    "exclude": ["./node_modules"]
+}
