@@ -1,10 +1,11 @@
-import React, { createContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import '../common.css'
 import day from 'dayjs'
 import { useContext } from 'react';
+import { isConstructorDeclaration } from 'typescript';
 
 type TodoDataListType = {
   [key: string]: string
@@ -22,72 +23,84 @@ type ContextType = {
   setTodoDataList: React.Dispatch<React.SetStateAction<TodoDataListType>>
 }
 const Context = createContext({} as ContextType)
-export default function (props: {path: string}) {
-  console.log('calendarPage')
-  const [date, setDate] = useState(new Date());
-  const [oriTodoDefaultValue, setOriTofoDefaultValue] = useState({'20220227': 'test String'} as TodoDataListType)
-  const [todoDataList, setTodoDataList] = useState(oriTodoDefaultValue)
-
-  // useEffect(() => {
-  //   console.log('oriTodoDefaultValue effect')
-  //   setTodoDataList(oriTodoDefaultValue)
-  // }, [oriTodoDefaultValue]);
-  // const setDateProps = (date: Date) =>  setDate(date)
-  // const todoDataListComputed = useMemo(() => {
-  //   return todoDataList
-  // }, [todoDataList])
-  // const setTodoDataListProps = (data: TodoDataListType) => setTodoDataList(data)
-  const firstData = {
-    date,
-    setDate,
-    todoDataList,
-    oriTodoDefaultValue: oriTodoDefaultValue,
-    setTodoDataList
+type ReducerStateType = {
+  date: Date
+  todoDataList: TodoDataListType
+  content: string
+}
+type ReducerActionType = {
+  type: 'setDate' | 'setTodoDataList' | 'setContent'
+  value: any
+}
+function initReducer() {
+  return {
+    date: new Date(),
+    todoDataList: {'20220228': 'test string'},
+    content: ''
   }
+}
+function reducer(state: ReducerStateType, action: ReducerActionType): ReducerStateType{
+  switch(action.type) {
+    case 'setDate':
+      return {...state, date: action.value}
+    case 'setTodoDataList':
+      return Object.assign({}, state, { todoDataList: action.value })
+    case 'setContent':
+      return Object.assign({}, state, { content: action.value })
+    default:
+      return state
+  }
+}
+export default function (props: {path: string}) {
+  console.log(1)
   return (
     <div className='app'>
       <h1 className='text-center'>React Calendar</h1>
-      <Context.Provider value={firstData}>
         <CalendarComponent />
-      </Context.Provider>
     </div>
   );
 }
 export function CalendarComponent () {
-  const todoContext = useContext(Context)
-  const [content, setContent] = useState('')
+  console.log('CalendarComponent')
+  const [state, dispatch] = useReducer(reducer, initReducer())
   useEffect(() => {
-    console.log('CalendarComponent effect')
-    const content = getSpecificDayToDoList(todoContext.date, todoContext.todoDataList) || ''
-    setContent(content)
-  }, [todoContext.date, todoContext.todoDataList])
+  console.log('CalendarComponent effect')
+
+    const content = getSpecificDayToDoList(state.date, state.todoDataList) || ''
+    dispatch({type: 'setContent', value: content})
+  }, [state.date, state.todoDataList])
+
+  useEffect(() => {
+    console.log('CalendarComponent 2')
+    dispatch({type: 'setContent', value: 'content'})
+
+  }, [state.date, state.todoDataList])
 
   function setSpecificDayToDoList(text: string) {
-    const toDoData = Object.assign({}, todoContext.todoDataList)
-    const dayString = day(todoContext.date).format('YYYYMMDD').toString()
+    const toDoData = Object.assign({}, state.todoDataList)
+    const dayString = day(state.date).format('YYYYMMDD').toString()
     toDoData[dayString] = text
-    todoContext.setTodoDataList(toDoData)
+    dispatch({type: 'setTodoDataList', value: toDoData})
   }
   return (
     <div className="flexClass">
       <div className='calendar-container'>
-        <Calendar onChange={(e: Date) => todoContext.setDate(e)} value={todoContext.date} />
+        <Calendar onChange={(e: Date) => dispatch({type: 'setDate', value: e})} value={state.date} />
         <p className='text-center'>
           <span className='bold'>Selected Date:</span>
-          {todoContext.date.toDateString()}
+          {state.date.toDateString()}
         </p>
       </div>
-      <TodoBoard content={content} setContent={(text: string) => setContent(text)} doSaveContent={(text: string) => setSpecificDayToDoList(text)}/>
+      <TodoBoard content={state.content} setContent={(text: string) => dispatch({type: 'setContent', value: text})} doSaveContent={(text: string) => setSpecificDayToDoList(text)}/>
     </div>
   )
 }
-
+// 沒有每次渲染 要檢查
 export function TodoBoard (props: {
   content: string
   doSaveContent: (text: string) => void
   setContent: (text: string) => void
 }) {
-  console.log('TodoBoard')
   const style = {
     width: '300px',
     height: '300px',
