@@ -51,56 +51,62 @@ function reducer(state: ReducerStateType, action: ReducerActionType): ReducerSta
       return state
   }
 }
+const CalendarContext = createContext({} as {calendarState: ReducerStateType, calendarDispatch: React.Dispatch<ReducerActionType>})
 export default function (props: {path: string}) {
+  const [state, dispatch] = useReducer(reducer, initReducer())
+
   console.log(1)
   return (
     <div className='app'>
       <h1 className='text-center'>React Calendar</h1>
+      <CalendarContext.Provider value={{calendarState: state, calendarDispatch: dispatch}}>
         <CalendarComponent />
+      </CalendarContext.Provider>
     </div>
   );
 }
 export function CalendarComponent () {
   console.log('CalendarComponent')
-  const [state, dispatch] = useReducer(reducer, initReducer())
+  const { calendarState, calendarDispatch} = useContext(CalendarContext)
+  
+  // const [state, dispatch] = useReducer(reducer, initReducer())
+  // 注意這邊，先用 memo 包起來之後，可以將取值的邏輯坐在 memo，由 memo 來判斷有沒有變，沒有他會返回一樣的ref，這樣就可以放在 useEffect 依賴上
+  // 用來檢查是否有變動 要不要觸法 effect
+  const memoDate = useMemo(() => {
+    console.log('memo test')
+    const content = getSpecificDayToDoList(calendarState.date, calendarState.todoDataList) || ''
+    return content
+  }, [calendarState.date])
   useEffect(() => {
   console.log('CalendarComponent effect')
+    calendarDispatch({type: 'setContent', value: memoDate})
+  }, [memoDate])
 
-    const content = getSpecificDayToDoList(state.date, state.todoDataList) || ''
-    dispatch({type: 'setContent', value: content})
-  }, [state.date, state.todoDataList])
-
-  useEffect(() => {
-    console.log('CalendarComponent 2')
-    dispatch({type: 'setContent', value: 'content'})
-
-  }, [state.date, state.todoDataList])
-
-  function setSpecificDayToDoList(text: string) {
-    const toDoData = Object.assign({}, state.todoDataList)
-    const dayString = day(state.date).format('YYYYMMDD').toString()
-    toDoData[dayString] = text
-    dispatch({type: 'setTodoDataList', value: toDoData})
-  }
   return (
     <div className="flexClass">
       <div className='calendar-container'>
-        <Calendar onChange={(e: Date) => dispatch({type: 'setDate', value: e})} value={state.date} />
+        <Calendar onChange={(e: Date) => calendarDispatch({type: 'setDate', value: e})} value={calendarState.date} />
         <p className='text-center'>
           <span className='bold'>Selected Date:</span>
-          {state.date.toDateString()}
+          {calendarState.date.toDateString()}
         </p>
       </div>
-      <TodoBoard content={state.content} setContent={(text: string) => dispatch({type: 'setContent', value: text})} doSaveContent={(text: string) => setSpecificDayToDoList(text)}/>
+      <TodoBoard />
     </div>
   )
 }
 // 沒有每次渲染 要檢查
-export function TodoBoard (props: {
-  content: string
-  doSaveContent: (text: string) => void
-  setContent: (text: string) => void
-}) {
+export function TodoBoard () {
+  const { calendarState, calendarDispatch} = useContext(CalendarContext)
+  // const [testContent, setTestContent] = useState(calendarState.content) // 這個無效，不知道為什麼 test 會是空直
+  function setSpecificDayToDoList(text: string) {
+    const toDoData = Object.assign({}, calendarState.todoDataList)
+    const dayString = day(calendarState.date).format('YYYYMMDD').toString()
+    toDoData[dayString] = text
+    calendarDispatch({type: 'setTodoDataList', value: toDoData})
+  }
+
+  // const content = useRef(calendarState.content)
   const style = {
     width: '300px',
     height: '300px',
@@ -108,8 +114,8 @@ export function TodoBoard (props: {
   }
   return (
     <div style={style}>
-      <textarea className="w100 h100 p10" value={props.content} onChange={(e) => props.setContent(e.target.value)} />
-      <button onClick={() => props.doSaveContent(props.content)}> save </button>
+      <textarea className="w100 h100 p10" value={calendarState.content} onChange={(e) => calendarDispatch({type: 'setContent', value: e.target.value})} />
+      <button onClick={() => setSpecificDayToDoList(calendarState.content)}> save </button>
     </div>
   )
 }
